@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Button, Image, Alert, Text, StyleSheet } from 'react-native';
+import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
@@ -9,6 +9,7 @@ export default function App() {
   const [selectedimage, setSelectedImage] = useState(null);
   const [imageData, setImageData] = useState(null);
   const [targetimage, setTargetImage] = useState(null);
+  const [colors, setColor] = useState(false);
   const selectImage = async (url) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -73,14 +74,15 @@ export default function App() {
     }
   };
   async function source() {
-    setSelectedImage(await selectImage('https://e80e-49-36-209-6.ngrok-free.app/media/upload/source_img'));
+    setSelectedImage(await selectImage('https://8a0f-183-83-216-62.ngrok-free.app/media/upload/source_img'));
   }
   async function target() {
-    setTargetImage(await selectImage('https://e80e-49-36-209-6.ngrok-free.app/media/upload/target'));
+    setTargetImage(await selectImage('https://8a0f-183-83-216-62.ngrok-free.app/media/upload/target'));
   }
   async function start() {
+    setColor(true);
     try {
-      const response = await axios.get('https://e80e-49-36-209-6.ngrok-free.app/start', {
+      const response = await axios.get('https://8a0f-183-83-216-62.ngrok-free.app/start', {
         responseType: 'blob',
       });
 
@@ -89,6 +91,7 @@ export default function App() {
       reader.onload = () => {
         const base64Data = reader.result;
         setImageData(base64Data)
+        setColor(false);
         console.log(base64Data);
       };
       reader.readAsDataURL(blob);
@@ -97,6 +100,7 @@ export default function App() {
     }
   }
 
+  var texts = colors ? "Loading.." : "CreateAvatar";
 
 
   return (
@@ -117,7 +121,13 @@ export default function App() {
 
       </View>
       <View style={{ height: 10 }}></View>
-      <Button title='Create Avatar' onPress={start}></Button>
+      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <TouchableOpacity style={styles.button} onPress={start}>
+          <Text style={styles.buttonText}>{texts}</Text>
+        </TouchableOpacity>
+      </View>
+
+
       <View style={{ justifyContent: 'space-around', alignItems: 'center' }}>
         <View style={{ height: 30 }}></View>
         {imageData && <Image source={{ uri: imageData }} style={{ width: 320, height: 320 }} />}
@@ -127,5 +137,20 @@ export default function App() {
     </View>
   );
 }
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#009ACD',
+    padding: 10,
+    borderRadius: 10,
+
+
+  },
+  buttonText: {
+    backgroundColor: '#009ACD',
+    fontSize: 20,
+    color: 'white'
+    // Other dark mode styles
+  },
+});
 
 
