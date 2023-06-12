@@ -11,6 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "permissions": ["WRITE_EXTERNAL_STORAGE"],
     "assetBundlePatterns": [
       "**/*"
     ],

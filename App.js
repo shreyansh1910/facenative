@@ -4,12 +4,16 @@ import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity } from '
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Permissions from 'expo-permissions';
+
 
 export default function App() {
   const [selectedimage, setSelectedImage] = useState(null);
   const [imageData, setImageData] = useState(null);
   const [targetimage, setTargetImage] = useState(null);
   const [colors, setColor] = useState(false);
+
   const selectImage = async (url) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -73,16 +77,47 @@ export default function App() {
       // Handle the error here (e.g., show an error message)
     }
   };
+  async function handleSave() {
+    const perm = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
+    if (perm.status != 'granted') {
+      return;
+    }
+    const filename = `${Date.now()}.png`;
+    b64Data = imageData.replace('data:application/octet-stream;base64,', '');
+    const fileUri = FileSystem.cacheDirectory + filename;
+    console.log(fileUri);
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, b64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const asset = await MediaLibrary.createAssetAsync(fileUri);
+      
+
+      const album = await MediaLibrary.getAlbumAsync('Photos');
+      console.log("album",album)
+      if (album == null) {
+        await MediaLibrary.createAlbumAsync('Photos', asset, false);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
+
+      console.log('Image saved successfully');
+    } catch (error) {
+      console.error('Error saving image:', error);
+    }
+  }
+
+
   async function source() {
-    setSelectedImage(await selectImage('https://8a0f-183-83-216-62.ngrok-free.app/media/upload/source_img'));
+    setSelectedImage(await selectImage('https://e61c-49-36-209-6.ngrok-free.app/media/upload/source_img'));
   }
   async function target() {
-    setTargetImage(await selectImage('https://8a0f-183-83-216-62.ngrok-free.app/media/upload/target'));
+    setTargetImage(await selectImage('https://e61c-49-36-209-6.ngrok-free.app/media/upload/target'));
   }
   async function start() {
     setColor(true);
     try {
-      const response = await axios.get('https://8a0f-183-83-216-62.ngrok-free.app/start', {
+      const response = await axios.get('https://e61c-49-36-209-6.ngrok-free.app/start', {
         responseType: 'blob',
       });
 
@@ -92,7 +127,7 @@ export default function App() {
         const base64Data = reader.result;
         setImageData(base64Data)
         setColor(false);
-        console.log(base64Data);
+        //console.log(base64Data);
       };
       reader.readAsDataURL(blob);
     } catch (error) {
@@ -131,6 +166,7 @@ export default function App() {
       <View style={{ justifyContent: 'space-around', alignItems: 'center' }}>
         <View style={{ height: 30 }}></View>
         {imageData && <Image source={{ uri: imageData }} style={{ width: 320, height: 320 }} />}
+        {imageData && <Button onPress={handleSave} title='download' />}
       </View>
 
 
