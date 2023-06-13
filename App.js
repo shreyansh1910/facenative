@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity,  } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-import * as Permissions from 'expo-permissions';
+
 
 
 export default function App() {
@@ -33,6 +33,11 @@ export default function App() {
         uploadImage(result.assets[0].uri, url)
         return (result.assets[0].uri)
       }
+      else
+      {
+        return uploadImage(null,null);
+
+      }
     } catch (error) {
       console.log('Error selecting image:', error);
       // Handle the error here (e.g., show an error message)
@@ -42,7 +47,7 @@ export default function App() {
     try {
 
       if (selectedImage === null) {
-        Alert.alert('No image selected', 'Please select an image before uploading');
+        Alert.alert('No image selected');
         return;
       }
       const pathComponents = selectedImage.split('/');
@@ -78,25 +83,29 @@ export default function App() {
     }
   };
   async function handleSave() {
-    const perm = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
-    if (perm.status != 'granted') {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+
+    if (status !== 'granted') {
+      console.log('Permission not granted');
       return;
     }
     const filename = `${Date.now()}.png`;
     b64Data = imageData.replace('data:application/octet-stream;base64,', '');
-    const fileUri = FileSystem.cacheDirectory + filename;
+    const fileUri = FileSystem.documentDirectory + filename;
     console.log(fileUri);
     try {
       await FileSystem.writeAsStringAsync(fileUri, b64Data, {
         encoding: FileSystem.EncodingType.Base64,
       });
       const asset = await MediaLibrary.createAssetAsync(fileUri);
-      
+      console.log('asset',asset);
+      console.log('asset uri',asset.uri); 
+      // await MediaLibrary.saveToCameraRollAsync(asset.uri);
 
-      const album = await MediaLibrary.getAlbumAsync('Photos');
+      const album = await MediaLibrary.getAlbumAsync('Expo photos');
       console.log("album",album)
       if (album == null) {
-        await MediaLibrary.createAlbumAsync('Photos', asset, false);
+        await MediaLibrary.createAlbumAsync('Expo photos', asset, false);
       } else {
         await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
       }
@@ -109,15 +118,21 @@ export default function App() {
 
 
   async function source() {
-    setSelectedImage(await selectImage('https://e61c-49-36-209-6.ngrok-free.app/media/upload/source_img'));
+    setSelectedImage(await selectImage('https://901f-183-83-216-62.ngrok-free.app/media/upload/source_img'));
   }
   async function target() {
-    setTargetImage(await selectImage('https://e61c-49-36-209-6.ngrok-free.app/media/upload/target'));
+    setTargetImage(await selectImage('https://901f-183-83-216-62.ngrok-free.app/media/upload/target'));
   }
   async function start() {
-    setColor(true);
+    
+    if(selectedimage ==null || targetimage==null)
+     {
+      Alert.alert('select images');
+      return;
+     }
+     setColor(true);
     try {
-      const response = await axios.get('https://e61c-49-36-209-6.ngrok-free.app/start', {
+      const response = await axios.get('https://901f-183-83-216-62.ngrok-free.app/start', {
         responseType: 'blob',
       });
 
@@ -139,7 +154,7 @@ export default function App() {
 
 
   return (
-    <View style={{ marginTop: 50 }}>
+    <View style={{ marginTop: '12%' }}>
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}><Button title='Input Image' onPress={source}></Button></View>
         <View style={{ flex: 1 }}><Button title='Filter Image' onPress={target}></Button></View>
@@ -163,9 +178,10 @@ export default function App() {
       </View>
 
 
-      <View style={{ justifyContent: 'space-around', alignItems: 'center' }}>
-        <View style={{ height: 30 }}></View>
-        {imageData && <Image source={{ uri: imageData }} style={{ width: 320, height: 320 }} />}
+      <View style={{  alignItems: 'center' }}>
+        <View style={{ height: 20 }}></View>
+        {imageData && <Image source={{ uri: imageData }} style={{ width: '60%', height: '60%' }} />}
+        <View style={{ height: '1%' }}></View>
         {imageData && <Button onPress={handleSave} title='download' />}
       </View>
 
