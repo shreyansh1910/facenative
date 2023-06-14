@@ -1,6 +1,6 @@
 
-import React, { useState,useEffect } from 'react';
-import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity,  } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity, } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
@@ -13,22 +13,24 @@ export default function App() {
   const [imageData, setImageData] = useState(null);
   const [targetimage, setTargetImage] = useState(null);
   const [colors, setColor] = useState(false);
-  const [sucessImage,setSuccessImage]=useState(null);
-  const [success1,setSuccess1]=useState(false);
-  const [success2,setSuccess2]=useState(false);
-  var texts = colors ? ((success1==false || success2==false)? "Images are uploading": "Loading ..." ): "CreateAvatar" ;
+  const [sucessImage, setSuccessImage] = useState(null);
+  const [success1, setSuccess1] = useState(false);
+  const [success2, setSuccess2] = useState(false);
+  const [blobs, setBlobs] = useState(null);
+  var texts = colors ? ((success1 == false || success2 == false) ? "Images are uploading" : "Loading ...") : "CreateAvatar";
   useEffect(() => {
-    async function loadImage(){
-    const [{ localUri }] =  await Asset.loadAsync(require('./assets/clip.png'));
-    console.log(localUri);
-  setSuccessImage(localUri)}
+    async function loadImage() {
+      const [{ localUri }] = await Asset.loadAsync(require('./assets/clip.png'));
+      console.log(localUri);
+      setSuccessImage(localUri)
+    }
     loadImage();
-    
-  }); 
-  
+
+  });
 
 
-  const selectImage = async (url,func) => {
+
+  const selectImage = async (url, func) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -44,12 +46,11 @@ export default function App() {
       console.log(result)
 
       if (!result.canceled) {
-         uploadImage(result.assets[0].uri, url,func)
+        uploadImage(result.assets[0].uri, url, func)
         return (result.assets[0].uri)
       }
-      else
-      {
-        return uploadImage(null,null,func);
+      else {
+        return uploadImage(null, null, func);
 
       }
     } catch (error) {
@@ -57,7 +58,7 @@ export default function App() {
       // Handle the error here (e.g., show an error message)
     }
   };
-  const uploadImage = async (selectedImage, url,func) => {
+  const uploadImage = async (selectedImage, url, func) => {
     try {
 
       if (selectedImage === null) {
@@ -107,19 +108,20 @@ export default function App() {
     }
     const filename = `${Date.now()}.png`;
     b64Data = imageData.replace('data:application/octet-stream;base64,', '');
-    const fileUri = FileSystem.cacheDirectory + filename;
+    var fileUri = FileSystem.cacheDirectory + filename;
     console.log(fileUri);
     try {
       await FileSystem.writeAsStringAsync(fileUri, b64Data, {
         encoding: FileSystem.EncodingType.Base64,
+        
       });
       const asset = await MediaLibrary.createAssetAsync(fileUri);
-      console.log('asset',asset);
-      console.log('asset uri',asset.uri); 
+      console.log('asset', asset);
+      console.log('asset uri', asset.uri);
       // await MediaLibrary.saveToCameraRollAsync(asset.uri);
 
       const album = await MediaLibrary.getAlbumAsync('Expo photos');
-      console.log("album",album)
+      console.log("album", album)
       if (album == null) {
         await MediaLibrary.createAlbumAsync('Expo photos', asset, false);
       } else {
@@ -135,35 +137,34 @@ export default function App() {
 
   async function source() {
     setSuccess1(false)
-    setSelectedImage(await selectImage('https://b207-49-36-209-6.ngrok-free.app/media/upload/source_img',setSuccess1));
+    setSelectedImage(await selectImage('http://65.1.121.115:5000/source_img', setSuccess1));
   }
   async function target() {
     setSuccess2(false)
-    setTargetImage(await selectImage('https://b207-49-36-209-6.ngrok-free.app/media/upload/target',setSuccess2));
+    setTargetImage(await selectImage('http://65.1.121.115:5000/target', setSuccess2));
   }
   async function start() {
-    
-    if((selectedimage ==null || targetimage==null) )
-     {
+
+    if ((selectedimage == null || targetimage == null)) {
       Alert.alert('select images');
       return;
-     }
-     if(success1==false || success2==false) 
-     {
+    }
+    if (success1 == false || success2 == false) {
       setColor(true);
       setTimeout(() => {
         setColor(false)
-        
+
       }, 3000);
       return;
-     }
-      setColor(true);
+    }
+    setColor(true);
     try {
-      const response = await axios.get('https://b207-49-36-209-6.ngrok-free.app/start', {
+      const response = await axios.get('http://65.1.121.115:5000/start', {
         responseType: 'blob',
       });
 
       const blob = await response.data;
+      //setBlobs(blob);
       //console.log('blob',blob);
       const reader = new FileReader();
       reader.onload = () => {
@@ -173,67 +174,68 @@ export default function App() {
         //console.log(base64Data);
       };
       reader.readAsDataURL(blob);
-    } catch (error) {
-      console.error('Error retrieving image:', error);
+      }
+        catch (error) {
+          console.error('Error retrieving image:', error);
+        }
     }
-  }
 
   
 
 
   return (
-    <View style={{ marginTop: '12%' }}>
-      <View style={{ flexDirection: 'row' }}>
-        <View style={{ flex: 1 }}><Button title='Input Image' onPress={source}></Button></View>
-        <View style={{ flex: 1 }}><Button title='Filter Image' onPress={target}></Button></View>
+      <View style={{ marginTop: '12%' }}>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={{ flex: 1 }}><Button title='Input Image' onPress={source}></Button></View>
+          <View style={{ flex: 1 }}><Button title='Filter Image' onPress={target}></Button></View>
 
-      </View>
-      <View style={{ flexDirection: 'row' }}>
-        <View style={{ flex: 1 }}>
-          {selectedimage && <Image source={{ uri: selectedimage }} style={{ height: 200 }} resizeMode='cover' />}
-          {success1 && <Image source={{uri:sucessImage}} style={{ height: 50 ,width:50,position:'absolute',top:150,left:0}} resizeMode='cover' />}
-          
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={{ flex: 1 }}>
+            {selectedimage && <Image source={{ uri: selectedimage }} style={{ height: 200 }} resizeMode='cover' />}
+            {success1 && <Image source={{ uri: sucessImage }} style={{ height: 50, width: 50, position: 'absolute', top: 150, left: 0 }} resizeMode='cover' />}
+
+          </View>
+
+          <View style={{ flex: 1 }}>
+            {targetimage && <Image source={{ uri: targetimage }} style={{ height: 200 }} resizeMode='cover' />}
+            {success2 && <Image source={{ uri: sucessImage }} style={{ height: 50, width: 50, position: 'absolute', top: 150, left: 0 }} resizeMode='cover' />}
+          </View>
+
+        </View>
+        <View style={{ height: 10 }}></View>
+        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={styles.button} onPress={start}>
+            <Text style={styles.buttonText}>{texts}</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={{ flex: 1 }}>
-          {targetimage && <Image source={{ uri: targetimage }} style={{ height: 200 }} resizeMode='cover' />}
-          {success2 && <Image source={{uri:sucessImage}} style={{ height: 50 ,width:50,position:'absolute',top:150,left:0}} resizeMode='cover' />}
+
+        <View style={{ alignItems: 'center' }}>
+          <View style={{ height: 20 }}></View>
+          {imageData && <Image source={{ uri: imageData }} style={{ width: '60%', height: '60%' }} />}
+          <View style={{ height: '1%' }}></View>
+          {imageData && <Button onPress={handleSave} title='download' />}
         </View>
 
+
       </View>
-      <View style={{ height: 10 }}></View>
-      <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <TouchableOpacity style={styles.button} onPress={start}>
-          <Text style={styles.buttonText}>{texts}</Text>
-        </TouchableOpacity>
-      </View>
+    );
+  }
+  const styles = StyleSheet.create({
+    button: {
+      backgroundColor: '#009ACD',
+      padding: 10,
+      borderRadius: 10,
 
 
-      <View style={{  alignItems: 'center' }}>
-        <View style={{ height: 20 }}></View>
-        {imageData && <Image source={{ uri: imageData }} style={{ width: '60%', height: '60%' }} />}
-        <View style={{ height: '1%' }}></View>
-        {imageData && <Button onPress={handleSave} title='download' />}
-      </View>
-
-
-    </View>
-  );
-}
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#009ACD',
-    padding: 10,
-    borderRadius: 10,
-
-
-  },
-  buttonText: {
-    backgroundColor: '#009ACD',
-    fontSize: 20,
-    color: 'white'
-    // Other dark mode styles
-  },
-});
+    },
+    buttonText: {
+      backgroundColor: '#009ACD',
+      fontSize: 20,
+      color: 'white'
+      // Other dark mode styles
+    },
+  });
 
 
