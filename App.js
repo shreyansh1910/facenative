@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { View, Button, Image, Alert, Text, StyleSheet, TouchableOpacity,  } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-
+import { Asset } from 'expo-asset'
 
 
 export default function App() {
@@ -13,8 +13,22 @@ export default function App() {
   const [imageData, setImageData] = useState(null);
   const [targetimage, setTargetImage] = useState(null);
   const [colors, setColor] = useState(false);
+  const [sucessImage,setSuccessImage]=useState(null);
+  const [success1,setSuccess1]=useState(false);
+  const [success2,setSuccess2]=useState(false);
+  var texts = colors ? ((success1==false || success2==false)? "Images are uploading": "Loading ..." ): "CreateAvatar" ;
+  useEffect(() => {
+    async function loadImage(){
+    const [{ localUri }] =  await Asset.loadAsync(require('./assets/clip.png'));
+    console.log(localUri);
+  setSuccessImage(localUri)}
+    loadImage();
+    
+  }); 
+  
 
-  const selectImage = async (url) => {
+
+  const selectImage = async (url,func) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -30,12 +44,12 @@ export default function App() {
       console.log(result)
 
       if (!result.canceled) {
-        uploadImage(result.assets[0].uri, url)
+         uploadImage(result.assets[0].uri, url,func)
         return (result.assets[0].uri)
       }
       else
       {
-        return uploadImage(null,null);
+        return uploadImage(null,null,func);
 
       }
     } catch (error) {
@@ -43,11 +57,12 @@ export default function App() {
       // Handle the error here (e.g., show an error message)
     }
   };
-  const uploadImage = async (selectedImage, url) => {
+  const uploadImage = async (selectedImage, url,func) => {
     try {
 
       if (selectedImage === null) {
         Alert.alert('No image selected');
+        func(false);
         return;
       }
       const pathComponents = selectedImage.split('/');
@@ -73,6 +88,7 @@ export default function App() {
 
       if (response) {
         console.log(response.data)
+        func(true);
 
       } else {
         console.log("msg failed to upload the image")
@@ -91,7 +107,7 @@ export default function App() {
     }
     const filename = `${Date.now()}.png`;
     b64Data = imageData.replace('data:application/octet-stream;base64,', '');
-    const fileUri = FileSystem.documentDirectory + filename;
+    const fileUri = FileSystem.cacheDirectory + filename;
     console.log(fileUri);
     try {
       await FileSystem.writeAsStringAsync(fileUri, b64Data, {
@@ -118,25 +134,37 @@ export default function App() {
 
 
   async function source() {
-    setSelectedImage(await selectImage('https://901f-183-83-216-62.ngrok-free.app/media/upload/source_img'));
+    setSuccess1(false)
+    setSelectedImage(await selectImage('https://b207-49-36-209-6.ngrok-free.app/media/upload/source_img',setSuccess1));
   }
   async function target() {
-    setTargetImage(await selectImage('https://901f-183-83-216-62.ngrok-free.app/media/upload/target'));
+    setSuccess2(false)
+    setTargetImage(await selectImage('https://b207-49-36-209-6.ngrok-free.app/media/upload/target',setSuccess2));
   }
   async function start() {
     
-    if(selectedimage ==null || targetimage==null)
+    if((selectedimage ==null || targetimage==null) )
      {
       Alert.alert('select images');
       return;
      }
-     setColor(true);
+     if(success1==false || success2==false) 
+     {
+      setColor(true);
+      setTimeout(() => {
+        setColor(false)
+        
+      }, 3000);
+      return;
+     }
+      setColor(true);
     try {
-      const response = await axios.get('https://901f-183-83-216-62.ngrok-free.app/start', {
+      const response = await axios.get('https://b207-49-36-209-6.ngrok-free.app/start', {
         responseType: 'blob',
       });
 
       const blob = await response.data;
+      //console.log('blob',blob);
       const reader = new FileReader();
       reader.onload = () => {
         const base64Data = reader.result;
@@ -150,7 +178,7 @@ export default function App() {
     }
   }
 
-  var texts = colors ? "Loading.." : "CreateAvatar";
+  
 
 
   return (
@@ -163,10 +191,13 @@ export default function App() {
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}>
           {selectedimage && <Image source={{ uri: selectedimage }} style={{ height: 200 }} resizeMode='cover' />}
+          {success1 && <Image source={{uri:sucessImage}} style={{ height: 50 ,width:50,position:'absolute',top:150,left:0}} resizeMode='cover' />}
+          
         </View>
 
         <View style={{ flex: 1 }}>
           {targetimage && <Image source={{ uri: targetimage }} style={{ height: 200 }} resizeMode='cover' />}
+          {success2 && <Image source={{uri:sucessImage}} style={{ height: 50 ,width:50,position:'absolute',top:150,left:0}} resizeMode='cover' />}
         </View>
 
       </View>
